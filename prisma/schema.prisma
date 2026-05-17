@@ -1,0 +1,62 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Sede {
+  id        String   @id @default(uuid())
+  nombre    String   @unique
+  inventarios InventarioSede[]
+}
+
+model Usuario {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  nombre    String
+  rol       String   @default("STAFF") // ADMIN o STAFF
+  createdAt DateTime @default(now())
+}
+
+model Insumo {
+  id           String   @id @default(uuid())
+  nombre       String
+  unidadMedida String
+  recetas      RecetaInsumo[]
+  inventarios  InventarioSede[]
+}
+
+model InventarioSede {
+  id            String   @id @default(uuid())
+  sedeId        String
+  insumoId      String
+  stockActual   Float
+  costoUnitario Float
+
+  sede          Sede     @relation(fields: [sedeId], references: [id], onDelete: Cascade)
+  insumo        Insumo   @relation(fields: [insumoId], references: [id], onDelete: Cascade)
+
+  @@unique([sedeId, insumoId])
+}
+
+model Servicio {
+  id          String   @id @default(uuid())
+  nombre      String
+  precioVenta Float
+  recetas     RecetaInsumo[]
+}
+
+model RecetaInsumo {
+  id              String   @id @default(uuid())
+  servicioId      String
+  insumoId        String
+  cantidadNecesaria Float
+
+  servicio        Servicio @relation(fields: [servicioId], references: [id], onDelete: Cascade)
+  insumo          Insumo   @relation(fields: [insumoId], references: [id], onDelete: Cascade)
+
+  @@unique([servicioId, insumoId])
+}
