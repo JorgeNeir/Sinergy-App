@@ -1,6 +1,8 @@
 import { getServicios, getInsumos, getSedes } from "@/actions/inventory";
 import GridServicios from "@/components/GridServicios";
 
+export const dynamic = 'force-dynamic';
+
 interface Props {
   searchParams: Promise<{ sede?: string }>;
 }

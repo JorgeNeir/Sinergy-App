@@ -1,6 +1,8 @@
 import { getInsumos, getServicios, getSedes, getInsumosBajoStock } from "@/actions/inventory";
 import AlertasStock from "@/components/AlertasStock";
 
+export const dynamic = 'force-dynamic';
+
 interface Props {
   searchParams: Promise<{ sede?: string }>;
 }

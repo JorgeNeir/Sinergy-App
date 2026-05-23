@@ -7,6 +7,8 @@ import ImportadorExcel from "@/components/ImportadorExcel";
 import AdminTabs from "@/components/AdminTabs";
 import FormGestionUsuarios from "@/components/FormGestionUsuarios";
 
+export const dynamic = 'force-dynamic';
+
 interface Props {
   searchParams: Promise<{ sede?: string }>;
 }

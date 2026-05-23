@@ -1,6 +1,8 @@
 import { getInsumos, getSedes } from "@/actions/inventory";
 import TablaInsumos from "@/components/TablaInsumos";
 
+export const dynamic = 'force-dynamic';
+
 interface Props {
   searchParams: Promise<{ sede?: string }>;
 }
