@@ -43,11 +43,9 @@ COPY --from=builder /app/.next/static ./.next/static
 COPY --from=builder /app/public ./public
 COPY --from=builder /app/prisma ./prisma
 
-# Copy prisma CLI and its engine dependencies for db push at startup
-COPY --from=builder /app/node_modules/prisma ./node_modules/prisma
-COPY --from=builder /app/node_modules/@prisma/engines ./node_modules/@prisma/engines
-COPY --from=builder /app/node_modules/@prisma/engines-version ./node_modules/@prisma/engines-version
-COPY --from=builder /app/node_modules/.bin/prisma ./node_modules/.bin/prisma
+# Install prisma CLI globally (build time, has internet access)
+# so it runs with all dependencies before starting the app
+RUN npm install -g prisma@5.22.0 && npm cache clean --force
 
 # Set environment variables
 ENV NODE_ENV=production
@@ -63,4 +61,4 @@ USER nextjs
 EXPOSE 3000
 
 # Sync schema then start (db push is idempotent and safe for dev)
-CMD ["sh", "-c", "node_modules/.bin/prisma db push --skip-generate --accept-data-loss && node server.js"]
+CMD ["sh", "-c", "prisma db push --skip-generate --accept-data-loss && node server.js"]
