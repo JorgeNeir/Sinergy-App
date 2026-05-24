@@ -1,7 +1,7 @@
 # ============================================
 # Stage 1: Dependencies
 # ============================================
-FROM node:20-alpine AS deps
+FROM node:20-bullseye-slim AS deps
 
 WORKDIR /app
 
@@ -12,7 +12,7 @@ RUN npm ci
 # ============================================
 # Stage 2: Builder
 # ============================================
-FROM node:20-alpine AS builder
+FROM node:20-bullseye-slim AS builder
 
 WORKDIR /app
 
@@ -29,7 +29,7 @@ RUN npm run build
 # ============================================
 # Stage 3: Runner
 # ============================================
-FROM node:20-alpine AS runner
+FROM node:20-bullseye-slim AS runner
 
 WORKDIR /app
 
@@ -42,7 +42,6 @@ COPY --from=builder /app/.next/standalone ./
 COPY --from=builder /app/.next/static ./.next/static
 COPY --from=builder /app/public ./public
 COPY --from=builder /app/prisma ./prisma
-COPY --from=builder /app/.env ./.env
 
 # Set environment variables
 ENV NODE_ENV=production
