@@ -50,12 +50,25 @@ jobs:
 
       - name: Trigger App Runner Deployment
         run: |
-          SERVICE_ARN=$(aws apprunner list-services \
-            --query "ServiceSummaryList[?ServiceName=='sinergy-inventario'].ServiceArn" \
-            --output text)
-          if [ -n "$SERVICE_ARN" ] && [ "$SERVICE_ARN" != "None" ]; then
+          SERVICE=$(aws apprunner list-services \
+            --query "ServiceSummaryList[?ServiceName=='sinergy-inventario'].{Arn:ServiceArn,Status:Status}" \
+            --output json | jq -r '.[0] // empty')
+
+          if [ -z "$SERVICE" ]; then
+            echo "⚠️  App Runner service 'sinergy-inventario' no encontrado. La IaC debe crearlo primero."
+            exit 1
+          fi
+
+          SERVICE_ARN=$(echo "$SERVICE" | jq -r '.Arn')
+          SERVICE_STATUS=$(echo "$SERVICE" | jq -r '.Status')
+
+          if [ "$SERVICE_STATUS" = "RUNNING" ]; then
             aws apprunner start-deployment --service-arn "$SERVICE_ARN"
-            echo "✅ App Runner deployment triggered: $SERVICE_ARN"
+            echo "✅ Deployment iniciado: $SERVICE_ARN"
+          elif [ "$SERVICE_STATUS" = "CREATE_FAILED" ]; then
+            echo "❌ El servicio está en CREATE_FAILED. Ejecuta el workflow de IaC para recrearlo."
+            exit 1
           else
-            echo "⚠️  App Runner service 'sinergy-inventario' not found. Skipping deployment."
+            echo "⏳ Servicio en estado '$SERVICE_STATUS'. Esperando a que esté RUNNING..."
+            exit 1
           fi
