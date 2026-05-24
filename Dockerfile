@@ -42,10 +42,11 @@ COPY --from=builder /app/.next/standalone ./
 COPY --from=builder /app/.next/static ./.next/static
 COPY --from=builder /app/public ./public
 COPY --from=builder /app/prisma ./prisma
+COPY start.sh ./start.sh
 
 # Install prisma CLI globally (build time, has internet access)
 # so it runs with all dependencies before starting the app
-RUN npm install -g prisma@5.22.0 && npm cache clean --force
+RUN npm install -g prisma@5.22.0 && npm cache clean --force && chmod +x start.sh
 
 # Set environment variables
 ENV NODE_ENV=production
@@ -60,5 +61,5 @@ USER nextjs
 # Expose port
 EXPOSE 3000
 
-# Sync schema then start (db push is idempotent and safe for dev)
-CMD ["sh", "-c", "prisma db push --skip-generate --accept-data-loss && node server.js"]
+# Sync schema, seed if empty, then start
+CMD ["./start.sh"]
