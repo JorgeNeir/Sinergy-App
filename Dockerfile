@@ -44,6 +44,9 @@ COPY --from=builder /app/public ./public
 COPY --from=builder /app/prisma ./prisma
 COPY start.sh ./start.sh
 
+# Copy bcryptjs for seed-sedes.cjs (not included in Next.js standalone output)
+COPY --from=builder /app/node_modules/bcryptjs ./node_modules/bcryptjs
+
 # Install prisma CLI globally (build time, has internet access)
 # so it runs with all dependencies before starting the app
 RUN npm install -g prisma@5.22.0 && npm cache clean --force && chmod +x start.sh
