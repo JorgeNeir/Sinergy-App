@@ -36,7 +36,7 @@ model Usuario {
 
 model Producto {
   id           String  @id @default(uuid())
-  nombre       String
+  nombre       String  @unique
   unidadMedida String
   costo        Float
   precioVenta  Float

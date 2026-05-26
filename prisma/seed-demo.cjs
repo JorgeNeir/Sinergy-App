@@ -32,22 +32,22 @@ const PRODUCTOS = [
   { nombre: 'MAGNESIO',          unidadMedida: 'unidad', costo: 30000,  precioVenta: 60000 },
 ];
 
-// Stock inicial por sede (unidades)
+// Stock inicial por sede (nombres exactos como están en la BD)
 const STOCK_INICIAL = {
-  'Primavera': { 'ALFAVEN': 25, 'BONEVIT': 20, 'TRIVEN': 15, 'ZNOVIC': 10, 'VENDA': 50,
-                  'VITAMINA C + ZINC': 12, 'MELASMA 5': 8, 'CREMA HIDRATANTE': 6,
-                  'PANTALLA SOLAR': 10, 'CBD': 5, 'FM MANCHAS': 8, 'LEGUIS T 3': 5,
-                  'DRENADOR LINFATICO': 6, 'OMEGA KRILL': 8, 'VITAMINA D3 + K2': 10,
-                  'PROBIOTICOS': 7, 'CREMA ROSACEA': 5, 'GEL PUNTUAL ACNE': 6,
-                  'LEGUIS': 4, 'MAGNESIO': 9 },
-  'Hayuelos':  { 'ALFAVEN': 20, 'BONEVIT': 15, 'TRIVEN': 12, 'ZNOVIC': 8, 'VENDA': 40,
-                  'VITAMINA C + ZINC': 10, 'MELASMA 5': 6, 'CREMA HIDRATANTE': 4,
-                  'PANTALLA SOLAR': 8, 'CBD': 4, 'FM MANCHAS': 6, 'LEGUIS T 3': 4,
-                  'DRENADOR LINFATICO': 5, 'OMEGA KRILL': 6, 'VITAMINA D3 + K2': 8,
-                  'PROBIOTICOS': 5, 'CREMA ROSACEA': 4, 'GEL PUNTUAL ACNE': 5,
-                  'LEGUIS': 3, 'MAGNESIO': 7 },
-  'Funza':     { 'ALFAVEN': 10, 'BONEVIT': 8, 'TRIVEN': 6, 'VENDA': 20,
-                  'VITAMINA C + ZINC': 5, 'PANTALLA SOLAR': 4, 'MAGNESIO': 4 },
+  'C.C. Primavera': { 'ALFAVEN': 25, 'BONEVIT': 20, 'TRIVEN': 15, 'ZNOVIC': 10, 'VENDA': 50,
+                       'VITAMINA C + ZINC': 12, 'MELASMA 5': 8, 'CREMA HIDRATANTE': 6,
+                       'PANTALLA SOLAR': 10, 'CBD': 5, 'FM MANCHAS': 8, 'LEGUIS T 3': 5,
+                       'DRENADOR LINFATICO': 6, 'OMEGA KRILL': 8, 'VITAMINA D3 + K2': 10,
+                       'PROBIOTICOS': 7, 'CREMA ROSACEA': 5, 'GEL PUNTUAL ACNE': 6,
+                       'LEGUIS': 4, 'MAGNESIO': 9 },
+  'C.C. Hayuelos':  { 'ALFAVEN': 20, 'BONEVIT': 15, 'TRIVEN': 12, 'ZNOVIC': 8, 'VENDA': 40,
+                       'VITAMINA C + ZINC': 10, 'MELASMA 5': 6, 'CREMA HIDRATANTE': 4,
+                       'PANTALLA SOLAR': 8, 'CBD': 4, 'FM MANCHAS': 6, 'LEGUIS T 3': 4,
+                       'DRENADOR LINFATICO': 5, 'OMEGA KRILL': 6, 'VITAMINA D3 + K2': 8,
+                       'PROBIOTICOS': 5, 'CREMA ROSACEA': 4, 'GEL PUNTUAL ACNE': 5,
+                       'LEGUIS': 3, 'MAGNESIO': 7 },
+  'Funza':          { 'ALFAVEN': 10, 'BONEVIT': 8, 'TRIVEN': 6, 'VENDA': 20,
+                       'VITAMINA C + ZINC': 5, 'PANTALLA SOLAR': 4, 'MAGNESIO': 4 },
 };
 
 async function main() {
@@ -62,6 +62,14 @@ async function main() {
   const sedes = await prisma.sede.findMany();
   const sedeMap = {};
   for (const s of sedes) sedeMap[s.nombre] = s.id;
+
+  // Alias: los Excel usan nombres cortos, la BD usa nombres completos
+  const SEDE_ALIAS = {
+    'Primavera': 'C.C. Primavera',
+    'Hayuelos':  'C.C. Hayuelos',
+    'Funza':     'Funza',
+  };
+  const resolverSede = (nombre) => sedeMap[SEDE_ALIAS[nombre] || nombre] || null;
 
   const admin = await prisma.usuario.findFirst({ where: { rol: 'ADMIN' } });
   if (!admin) { console.log('No admin user found. Skipping demo seed.'); return; }
@@ -97,7 +105,7 @@ async function main() {
   console.log('Inserting', raw.ventas.length, 'ventas...');
   let ok = 0, skip = 0;
   for (const v of raw.ventas) {
-    const sedeId = sedeMap[v.sede];
+    const sedeId = resolverSede(v.sede);
     if (!sedeId) { skip++; continue; }
 
     let productoId = null;
@@ -139,8 +147,8 @@ async function main() {
 
   // ── Planes de tratamiento (depilación) ────────────────────────
   console.log('Inserting', raw.planes.length, 'planes...');
-  // Todos los planes de depilacion van a Primavera (sede principal en el Excel)
-  const sedeIdPrimavera = sedeMap['Primavera'];
+  // Todos los planes de depilacion van a C.C. Primavera (sede principal en el Excel)
+  const sedeIdPrimavera = sedeMap['C.C. Primavera'];
   if (sedeIdPrimavera) {
     for (const p of raw.planes) {
       const plan = await prisma.planTratamiento.create({
