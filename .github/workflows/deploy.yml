@@ -55,8 +55,8 @@ jobs:
             --output json | jq -r '.[0] // empty')
 
           if [ -z "$SERVICE" ]; then
-            echo "⚠️  App Runner service 'sinergy-inventario' no encontrado. La IaC debe crearlo primero."
-            exit 1
+            echo "ℹ️  App Runner service 'sinergy-inventario' no existe aún. Imagen en ECR lista — corre el workflow de IaC para crear el servicio."
+            exit 0
           fi
 
           SERVICE_ARN=$(echo "$SERVICE" | jq -r '.Arn')
@@ -66,9 +66,9 @@ jobs:
             aws apprunner start-deployment --service-arn "$SERVICE_ARN"
             echo "✅ Deployment iniciado: $SERVICE_ARN"
           elif [ "$SERVICE_STATUS" = "CREATE_FAILED" ]; then
-            echo "❌ El servicio está en CREATE_FAILED. Ejecuta el workflow de IaC para recrearlo."
-            exit 1
+            echo "ℹ️  Servicio en CREATE_FAILED. Imagen en ECR lista — corre el workflow de IaC para recrearlo."
+            exit 0
           else
-            echo "⏳ Servicio en estado '$SERVICE_STATUS'. Esperando a que esté RUNNING..."
-            exit 1
+            echo "⏳ Servicio en estado '$SERVICE_STATUS'. Imagen en ECR lista — vuelve a correr el deploy cuando esté RUNNING."
+            exit 0
           fi
