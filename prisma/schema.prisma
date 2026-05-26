@@ -8,56 +8,137 @@ datasource db {
 }
 
 model Sede {
-  id        String   @id @default(uuid())
-  nombre    String   @unique
-  inventarios InventarioSede[]
+  id     String @id @default(uuid())
+  nombre String @unique
+
+  stocks       StockSede[]
+  ventas       Venta[]
+  planes       PlanTratamiento[]
+  sesiones     SesionPlan[]
+  transOrigen  TransferenciaStock[] @relation("Origen")
+  transDestino TransferenciaStock[] @relation("Destino")
 }
 
 model Usuario {
   id           String   @id @default(uuid())
   email        String   @unique
   nombre       String
-  rol          String   @default("STAFF") // ADMIN o STAFF
+  rol          String   @default("STAFF") // ADMIN | STAFF
   passwordHash String?
   createdAt    DateTime @default(now())
+
+  ventas         Venta[]
+  planes         PlanTratamiento[]
+  sesiones       SesionPlan[]
+  pagos          PagoPlan[]
+  transferencias TransferenciaStock[]
 }
 
-model Insumo {
-  id           String   @id @default(uuid())
+model Producto {
+  id           String  @id @default(uuid())
   nombre       String
   unidadMedida String
-  recetas      RecetaInsumo[]
-  inventarios  InventarioSede[]
+  costo        Float
+  precioVenta  Float
+  activo       Boolean @default(true)
+
+  stocks         StockSede[]
+  ventas         Venta[]
+  transferencias TransferenciaStock[]
 }
 
-model InventarioSede {
+model StockSede {
+  id         String @id @default(uuid())
+  productoId String
+  sedeId     String
+  cantidad   Float  @default(0)
+
+  producto Producto @relation(fields: [productoId], references: [id])
+  sede     Sede     @relation(fields: [sedeId], references: [id])
+
+  @@unique([productoId, sedeId])
+}
+
+model TransferenciaStock {
   id            String   @id @default(uuid())
-  sedeId        String
-  insumoId      String
-  stockActual   Float
-  costoUnitario Float
+  productoId    String
+  sedeOrigenId  String
+  sedeDestinoId String
+  cantidad      Float
+  observaciones String?
+  fecha         DateTime @default(now())
+  adminId       String
 
-  sede          Sede     @relation(fields: [sedeId], references: [id], onDelete: Cascade)
-  insumo        Insumo   @relation(fields: [insumoId], references: [id], onDelete: Cascade)
-
-  @@unique([sedeId, insumoId])
+  producto    Producto @relation(fields: [productoId], references: [id])
+  sedeOrigen  Sede     @relation("Origen", fields: [sedeOrigenId], references: [id])
+  sedeDestino Sede     @relation("Destino", fields: [sedeDestinoId], references: [id])
+  admin       Usuario  @relation(fields: [adminId], references: [id])
 }
 
-model Servicio {
-  id          String   @id @default(uuid())
-  nombre      String
-  precioVenta Float
-  recetas     RecetaInsumo[]
+model Venta {
+  id               String   @id @default(uuid())
+  fecha            DateTime @default(now())
+  sedeId           String
+  pacienteNombre   String
+  pacienteApellido String
+  tipo             String // MEDICO | ESTETICO | ALMACEN
+  tratamiento      String? // texto libre para MEDICO/ESTETICO
+  productoId       String? // solo para ALMACEN
+  cantidad         Float? // unidades para ALMACEN
+  valorPagado      Float
+  formaPago        String // EFECTIVO | QR | TARJETA | NEQUI_DR | NEQUI
+  observaciones    String?
+  registradoPorId  String
+  createdAt        DateTime @default(now())
+
+  sede          Sede      @relation(fields: [sedeId], references: [id])
+  producto      Producto? @relation(fields: [productoId], references: [id])
+  registradoPor Usuario   @relation(fields: [registradoPorId], references: [id])
 }
 
-model RecetaInsumo {
+model PlanTratamiento {
+  id               String   @id @default(uuid())
+  sedeId           String
+  pacienteNombre   String
+  pacienteApellido String
+  tipo             String // MEDICO | ESTETICO
+  tratamiento      String
+  totalDosis       Int
+  valorTotal       Float
+  observaciones    String?
+  fechaVenta       DateTime @default(now())
+  registradoPorId  String
+  createdAt        DateTime @default(now())
+
+  sede          Sede       @relation(fields: [sedeId], references: [id])
+  registradoPor Usuario    @relation(fields: [registradoPorId], references: [id])
+  sesiones      SesionPlan[]
+  pagos         PagoPlan[]
+}
+
+model SesionPlan {
   id              String   @id @default(uuid())
-  servicioId      String
-  insumoId        String
-  cantidadNecesaria Float
+  planId          String
+  sedeId          String
+  fecha           DateTime @default(now())
+  dosisAplicadas  Int
+  notas           String?
+  registradoPorId String
 
-  servicio        Servicio @relation(fields: [servicioId], references: [id], onDelete: Cascade)
-  insumo          Insumo   @relation(fields: [insumoId], references: [id], onDelete: Cascade)
+  plan          PlanTratamiento @relation(fields: [planId], references: [id])
+  sede          Sede            @relation(fields: [sedeId], references: [id])
+  registradoPor Usuario         @relation(fields: [registradoPorId], references: [id])
+}
 
-  @@unique([servicioId, insumoId])
+model PagoPlan {
+  id              String   @id @default(uuid())
+  planId          String
+  fecha           DateTime @default(now())
+  monto           Float
+  formaPago       String
+  observaciones   String?
+  registradoPorId String
+
+  plan          PlanTratamiento @relation(fields: [planId], references: [id])
+  registradoPor Usuario         @relation(fields: [registradoPorId], references: [id])
 }
