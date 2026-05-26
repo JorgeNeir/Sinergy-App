@@ -14,11 +14,12 @@ model Sede {
 }
 
 model Usuario {
-  id        String   @id @default(uuid())
-  email     String   @unique
-  nombre    String
-  rol       String   @default("STAFF") // ADMIN o STAFF
-  createdAt DateTime @default(now())
+  id           String   @id @default(uuid())
+  email        String   @unique
+  nombre       String
+  rol          String   @default("STAFF") // ADMIN o STAFF
+  passwordHash String?
+  createdAt    DateTime @default(now())
 }
 
 model Insumo {

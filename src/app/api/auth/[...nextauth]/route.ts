@@ -1,54 +1,49 @@
 import NextAuth, { NextAuthOptions } from 'next-auth';
 import CredentialsProvider from 'next-auth/providers/credentials';
+import bcrypt from 'bcryptjs';
+import { prisma } from '@/lib/prisma';
 
 export const authOptions: NextAuthOptions = {
   providers: [
     CredentialsProvider({
-      name: 'Credenciales Locales',
+      name: 'Credenciales',
       credentials: {
         email: { label: 'Email', type: 'email' },
         password: { label: 'Contraseña', type: 'password' },
       },
       async authorize(credentials) {
-        const superUserEmail = process.env.SUPERUSER_EMAIL;
-        const superUserPassword = process.env.SUPERUSER_PASSWORD;
+        if (!credentials?.email || !credentials?.password) return null;
 
-        if (
-          credentials?.email === superUserEmail &&
-          credentials?.password === superUserPassword
-        ) {
-          return {
-            id: 'superuser-local',
-            email: superUserEmail,
-            name: 'Super Admin Local',
-            role: 'ADMIN',
-          };
-        }
+        const usuario = await prisma.usuario.findUnique({
+          where: { email: credentials.email },
+        });
 
-        return null;
+        if (!usuario?.passwordHash) return null;
+
+        const ok = await bcrypt.compare(credentials.password, usuario.passwordHash);
+        if (!ok) return null;
+
+        return {
+          id: usuario.id,
+          email: usuario.email,
+          name: usuario.nombre,
+          role: usuario.rol,
+        };
       },
     }),
   ],
   callbacks: {
     async jwt({ token, user }) {
-      if (user) {
-        token.role = (user as any).role || 'STAFF';
-      }
+      if (user) token.role = (user as any).role;
       return token;
     },
     async session({ session, token }) {
-      if (session.user) {
-        (session.user as any).role = token.role;
-      }
+      if (session.user) (session.user as any).role = token.role;
       return session;
     },
   },
-  pages: {
-    signIn: '/login',
-  },
-  session: {
-    strategy: 'jwt',
-  },
+  pages: { signIn: '/login' },
+  session: { strategy: 'jwt' },
   secret: process.env.NEXTAUTH_SECRET,
 };
 
